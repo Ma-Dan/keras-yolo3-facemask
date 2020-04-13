@@ -20,12 +20,12 @@ from keras.utils import multi_gpu_model
 
 class YOLO(object):
     _defaults = {
-        "model_path": 'model_data/yolo.h5',
+        "model_path": 'model_data/facemask.h5',
         "anchors_path": 'model_data/yolo_anchors.txt',
         "classes_path": 'model_data/coco_classes.txt',
-        "score" : 0.3,
+        "score" : 0.5,
         "iou" : 0.45,
-        "model_image_size" : (416, 416),
+        "model_image_size" : (608, 608),
         "gpu_num" : 1,
     }
 
@@ -79,15 +79,8 @@ class YOLO(object):
 
         print('{} model, anchors, and classes loaded.'.format(model_path))
 
-        # Generate colors for drawing bounding boxes.
-        hsv_tuples = [(x / len(self.class_names), 1., 1.)
-                      for x in range(len(self.class_names))]
-        self.colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
-        self.colors = list(
-            map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)),
-                self.colors))
-        np.random.seed(10101)  # Fixed seed for consistent colors across runs.
-        np.random.shuffle(self.colors)  # Shuffle colors to decorrelate adjacent classes.
+        # Specify colors for drawing bounding boxes.
+        self.colors = [(255, 0, 255), (128, 255, 0)]
         np.random.seed(None)  # Reset seed to default.
 
         # Generate output tensor targets for filtered bounding boxes.
@@ -171,7 +164,7 @@ class YOLO(object):
 
 def detect_video(yolo, video_path, output_path=""):
     import cv2
-    vid = cv2.VideoCapture(video_path)
+    vid = cv2.VideoCapture(0)
     if not vid.isOpened():
         raise IOError("Couldn't open webcam or video")
     video_FourCC    = int(vid.get(cv2.CAP_PROP_FOURCC))
