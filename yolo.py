@@ -22,7 +22,7 @@ class YOLO(object):
     _defaults = {
         "model_path": 'model_data/facemask.h5',
         "anchors_path": 'model_data/yolo_anchors.txt',
-        "classes_path": 'model_data/coco_classes.txt',
+        "classes_path": 'model_data/voc_classes.txt',
         "score" : 0.5,
         "iou" : 0.45,
         "model_image_size" : (608, 608),
