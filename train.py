@@ -9,7 +9,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 
-from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, yolo_loss
+from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, yolo3_loss, yolo_loss
 from yolo3.utils import get_random_data
 
 
@@ -22,7 +22,7 @@ def _main():
     num_classes = len(class_names)
     anchors = get_anchors(anchors_path)
 
-    input_shape = (416,416) # multiple of 32, hw
+    input_shape = (608, 608) # multiple of 32, hw
 
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
@@ -51,7 +51,7 @@ def _main():
     # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
     if True:
         model.compile(optimizer=Adam(lr=1e-3), loss={
-            # use custom yolo_loss Lambda layer.
+            # use custom yolo3_loss Lambda layer.
             'yolo_loss': lambda y_true, y_pred: y_pred})
 
         batch_size = 32
@@ -125,8 +125,14 @@ def create_model(input_shape, anchors, num_classes, load_pretrained=True, freeze
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
-    model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
-        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5})(
+    label_smoothing = 0
+    use_focal_obj_loss = True
+    use_focal_loss = True
+    use_diou_loss = True
+
+    model_loss = Lambda(yolo3_loss, output_shape=(1,), name='yolo_loss',
+        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5,
+        'label_smoothing': label_smoothing, 'use_focal_obj_loss': use_focal_obj_loss, 'use_focal_loss': use_focal_loss, 'use_diou_loss': use_diou_loss})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
@@ -155,7 +161,7 @@ def create_tiny_model(input_shape, anchors, num_classes, load_pretrained=True, f
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
-    model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
+    model_loss = Lambda(yolo3_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.7})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
